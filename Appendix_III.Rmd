@@ -2,6 +2,7 @@
 title: 'Appendix III'
 subtitle: 'Ecological memory patterns of virtual taxa: analyses and results'
 author: "Blas M. Benito"
+geometry: "left=1cm,right=1cm,top=2cm,bottom=2cm"
 output:
   pdf_document:
     fig_caption: yes
@@ -54,11 +55,18 @@ options(scipen=999)
 
 #checking if required packages are installed, and installing them if not
 #checking if required packages are installed, and installing them if not
-list.of.packages <- c("ggplot2", "cowplot", "knitr", "viridis", "tidyr", "formatR", "grid", "zoo", "ranger", "rpart", "rpart.plot", "partykit", "HH", "pdp", "kableExtra", "magrittr", "stringr", "dplyr")
+list.of.packages <- c("ggplot2", "cowplot", "knitr", "viridis", "tidyr", "formatR", "grid", "zoo", "ranger", "rpart", "rpart.plot", "partykit", "HH", "pdp", "kableExtra", "magrittr", "stringr", "dplyr", "grid", "gridExtra", "virtualPollen")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages, dep = TRUE)
 
-source("ecological_memory_functions.R")
+#from Github
+if(!("virtualPollen" %in% installed.packages())){
+  library(devtools)
+  install_github("blasbenito/memoria")
+}
+
+library(virtualPollen)
+library(memoria)
 library(ggplot2) #plotting library
 library(cowplot) #plotting library
 library(knitr)   #report generation in R
@@ -75,6 +83,8 @@ library(ranger)  #fast Random Forest implementation
 library(rpart)   #recursive partitions trees
 library(rpart.plot) #fancy plotting of rpart models
 library(stringr) #to parse variable names
+library(gridExtra)
+library(grid)
 
 options(scipen = 999)
 
@@ -107,7 +117,7 @@ This appendix presents the code required to run the analyses and to generate the
 
 \pagebreak
 
-#Cuantifying ecological memory patterns for the simulated taxa and dataset types#
+# Quantifying ecological memory patterns for the simulated taxa and dataset types
 
 We evaluated ecological memory on 16 virtual taxa and 5 dataset types ("Annual", "1cm", "2cm", "6cm", and "10cm") by using separatedly as exogenous component the values of the *driver* and the *suitability* values returned by the niche functions of the taxa. To compute ecological memory patterns from the simulated data, these steps are required:
 
@@ -118,11 +128,11 @@ We evaluated ecological memory on 16 virtual taxa and 5 dataset types ("Annual",
 
 After these steps, results are ready for further analyses. 
 
-##Running Random Forest models##
+## Fitting Random Forest models
 
 General parameters for the simulation.
 
-```{r, cache=TRUE, size="small"}
+```{r, cache=FALSE, size="small", echo=FALSE}
 #dataset types and taxa to be analyzed
 selected.dataset.types = 1:5
 selected.taxa = 1:16
@@ -156,7 +166,7 @@ traits <- c("maximum.age",
 
 Using **suitability** as exogenous component.
 
-```{r, size="small", message=FALSE, warning=FALSE, cache=TRUE, cache=TRUE, eval=FALSE}
+```{r, size="small", message=FALSE, warning=FALSE, cache=FALSE, cache=FALSE, eval=FALSE}
 E1.suitability <- runExperiment(
   simulations.file = simulation,
   selected.rows = selected.taxa,
@@ -174,9 +184,11 @@ E1.suitability <- runExperiment(
 
 ```
 
+\pagebreak
+
 Using **driver** as exogenous component.
 
-```{r, size="small", message=FALSE, warning=FALSE, cache=TRUE, eval=FALSE}
+```{r, size="small", message=FALSE, warning=FALSE, cache=FALSE, eval=FALSE}
 E1.driver <- runExperiment(
   simulations.file = simulation,
   selected.rows = selected.taxa,
@@ -193,47 +205,69 @@ E1.driver <- runExperiment(
   repetitions = repetitions)
 ```
 
-##Plotting ecological memory patterns##
 
-Plotting the **suitability** results.
+## Plotting ecological memory patterns
 
-```{r, size="small", fig.width=15, fig.height=18.5, message=FALSE, warning=FALSE, cache=TRUE, fig.cap="Ecological memory patterns of all virtual species (rows) and dataset types (columns) when using suitability (blue) as exogenous component (blue curves)."}
+The experiments ran in the previous section can be easily plotted with the *plotExperiment()* function as follows:
+
+```{r, size="small", echo=TRUE, eval=FALSE, message=FALSE, warning=FALSE, cache=FALSE}
 plotExperiment(
   experiment.output=E1.suitability, 
-  experiment.title="Ecological memory patterns with 
+  experiment.title="plot title", 
+  legend.position="bottom", 
+  R2=TRUE, 
+  sampling.names=sampling.names, 
+  strip.text.size=7, 
+  axis.x.text.size=9, 
+  axis.y.text.size=12, 
+  axis.x.title.size=14, 
+  axis.y.title.size=14,
+  title.size=18,
+  filename = "filename",
+  caption = "figure caption")
+```
+
+The result of this function applied on the experiments is shown below.
+
+\newpage
+
+```{r, size="small", echo=FALSE, fig.width=15, fig.height=18.5, message=FALSE, warning=FALSE, cache=FALSE, fig.cap="Ecological memory patterns of all virtual species (rows) and dataset types (columns) when using suitability (blue) as exogenous component (blue curves)."}
+  plotExperiment(
+  experiment.output=E1.suitability, 
+  experiment.title="Ecological memory patterns when using 
   suitability as exogenous component.", 
   legend.position="bottom", 
   R2=TRUE, 
   sampling.names=sampling.names, 
   strip.text.size=7, 
-  axis.x.text.size=7, 
+  axis.x.text.size=9, 
   axis.y.text.size=12, 
   axis.x.title.size=14, 
   axis.y.title.size=14,
   title.size=18,
-  filename = "E1_suitability")
+  filename = "Experiment_suitability",
+  caption = "Rows represent virtual taxa; Column 1: Annual dataset interpolated at 20 years resolution;  Columns 2 to 5: sedimenta ccumulation rate is applied and are sampled every 1, 2, 6, and 10 cm. respectively")
 ```
 
-Plotting the **driver** results.
-
-```{r, size="small", fig.width=15, fig.height=18.5, message=FALSE, warning=FALSE, cache=TRUE, fig.cap="Ecological memory patterns of all virtual species (rows) and dataset types (columns) when using driver (blue) as exogenous component (blue curves)."}
+```{r, size="small", echo=FALSE , fig.width=15, fig.height=18.5, message=FALSE, warning=FALSE, cache=FALSE, fig.cap="Ecological memory patterns of all virtual species (rows) and dataset types (columns) when using driver (blue) as exogenous component (blue curves)."}
 plotExperiment(
   experiment.output=E1.driver, 
-  experiment.title="Ecological memory patterns with 
+  experiment.title="Ecological memory patterns when using 
   driver as exogenous component.", 
   legend.position="bottom", 
   R2=TRUE, 
   sampling.names=sampling.names,
   strip.text.size=7, 
-  axis.x.text.size=7, 
+  axis.x.text.size=9, 
   axis.y.text.size=12, 
   axis.x.title.size=14, 
   axis.y.title.size=14,
   title.size=18,
-  filename = "E1_driver.pdf")
+  filename = "Experiment_driver",
+  caption = "Rows represent virtual taxa; Column 1: Annual dataset interpolated at 20 years resolution;  Columns 2 to 5: sedimenta ccumulation rate is applied and are sampled every 1, 2, 6, and 10 cm. respectively")
 ```
 
-##Organizing results into dataframes to facilitate further analyses##
+## Organizing results into dataframes to facilitate further analyses
 
 When applying *experimentToTable* to **E1.suitability** or **E1.driver** the resulting columns are (see **Table 1**):
 
@@ -255,13 +289,13 @@ When applying *experimentToTable* to **E1.suitability** or **E1.driver** the res
 + **growth.rate**: growth rate.
 + **maximum.biomass**: maximum biomass of the individuals (100).
 + **carrying.capacity**: carrying capacity of the landscape (10000).
-+ **niche.A.mean**: mean of the niche function. Also, *niche position*.
++ **niche.A.mean**: mean of the niche function. Also, *niche optimum* or *niche position*.
 + **niche.A.sd**: standard deviation of the niche function. Also, *niche breadth*.
 + **sampling**: one of "Annual", "1cm", "2cm", "6cm", "10cm"
 
 The code below generates the tables for the **suitability** and **driver** data. A sample output of *experimentToTable* is shown below.
 
-```{r, size="small", message=FALSE, warning=FALSE, cache=TRUE}
+```{r, size="small", message=FALSE, warning=FALSE, cache=FALSE, eval=FALSE}
 E1.suitability.df <- experimentToTable(
   experiment.output=E1.suitability, 
   parameters.file=parameters, 
@@ -307,7 +341,7 @@ kable(E1.suitability.df[1:35, ], caption="First rows of the table E1.suitability
   row_spec(0, col="#585858")
 
 #saving output
-save(E1.driver, E1.driver.df, E1.suitability, E1.suitability.df, file = "Appendix_III_output.RData")
+# save(E1.driver, E1.driver.df, E1.suitability, E1.suitability.df, file = "Appendix_III_output.RData")
 
 ```
 
@@ -316,27 +350,28 @@ save(E1.driver, E1.driver.df, E1.suitability, E1.suitability.df, file = "Appendi
 \elandscape
 \newpage
 
-#Paper figures and tables#
+# Paper figures and tables
 
 \setcounter{figure}{0} 
 \setcounter{table}{0} 
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, eval=TRUE}
 
 #GENERAL PARAMETERS FOR FIGURES
 
+#PUBLICATION SIZE
 #DIMENSIONS
-figure.width=7.25
-annotation.size=6
-legend.title.size=16
-legend.text.size=16
-axis.text.size=16
-axis.title.size=18
+figure.width=2.75
+annotation.size=2
+legend.title.size=6
+legend.text.size=6
+axis.text.size=6
+axis.title.size=6
 
 #COLORS
 plot.cols <- viridis(12, option="D")
-col.blue<-plot.cols[9] #colors are actually flipped, blue is green, green is blue, but who cares.
-col.green<-plot.cols[4]
+col.blue<-plot.cols[4]
+col.green<-plot.cols[9]
 col.gray.dark <- "gray20"
 col.gray.medium <-"gray50"
 col.gray.light <-"gray80"
@@ -347,18 +382,15 @@ to.preserve <- c(to.preserve, "to.preserve") #most beautiful line of code ever
 # rm(list= ls()[!(ls() %in% to.preserve)]) #to remove all objects except these
 ```
 
-##Figure 1##
+## Figure 1
 
 
-```{r, echo=FALSE, fig.height=4, fig.width=7.25, fig.cap="Components of ecological memory. Antecedent values of the driver and the response for a given lag length are located at T – Lag. Arrows represent the relative contribution of endogenous memory, exogenous memory, and the concurrent effect on the value of interest of the response at time T, represented by the green dot. This conceptual structure can be scaled up to any number of drivers and lags."}
+```{r, echo=FALSE, fig.height=2, fig.width=2.75, fig.cap="Components of ecological memory. Antecedent values of the driver and the response for a given lag length are located at T – Lag. Arrows represent the relative contribution of endogenous memory, exogenous memory, and the concurrent effect on the value of interest of the response at time T, represented by the green dot. This conceptual structure can be scaled up to any number of drivers and lags."}
 
 #FIGURE 1: MEMORY PATTERNS
 set.seed(10)
 time <- 1:100
 Driver <- seq(1, 10, length.out = 100) + cumsum(sample(c(-0.1, 0, 0.1), max(time), replace=TRUE))
-
-#VIRIDIS COLORS
-plot.cols <- viridis(12, option="D")
 
 #SUBSET PLOT DATA
 set.seed(10)
@@ -380,48 +412,48 @@ T1<-80
 myCurve1<-curveGrob(0, 0, 1, 1, default.units = "npc",
                     curvature = -0.33, angle = 60, ncp = 10, shape = 1,
                     square = FALSE, squareShape = 1,
-                    inflect = FALSE, arrow = arrow(), open = TRUE,
+                    inflect = FALSE, arrow = arrow(length = unit(0.1, "inches")), open = TRUE,
                     debug = FALSE,
-                    name = NULL, gp = gpar(lwd=3, col=col.blue), vp = NULL)
+                    name = NULL, gp = gpar(lwd=1, col=col.blue), vp = NULL)
 
 myCurve2<-curveGrob(0, 0, 1, 1, default.units = "npc",
                     curvature = 0.10, angle = 100, ncp = 10, shape = 1,
                     square = FALSE, squareShape = 1,
-                    inflect = FALSE, arrow = arrow(), open = TRUE,
+                    inflect = FALSE, arrow = arrow(length = unit(0.1, "inches")), open = TRUE,
                     debug = FALSE,
-                    name = NULL, gp = gpar(lwd=3, col=col.green), vp = NULL)
+                    name = NULL, gp = gpar(lwd=1, col=col.green), vp = NULL)
 
 myCurve3<-curveGrob(0, 0, 1, 1, default.units = "npc",
                     curvature = 0.4, angle = 60, ncp = 10, shape = 1,
                     square = FALSE, squareShape = 1,
-                    inflect = FALSE, arrow = arrow(), open = TRUE,
+                    inflect = FALSE, arrow = arrow(length = unit(0.1, "inches")), open = TRUE,
                     debug = FALSE,
-                    name = NULL, gp = gpar(lwd=3, col="gray40"), vp = NULL)
+                    name = NULL, gp = gpar(lwd=1, col="gray40"), vp = NULL)
 
 myCurve3b<-curveGrob(0, 0, 1, 1, default.units = "npc",
                      curvature = 0.4, angle = 60, ncp = 10, shape = 1,
                      square = FALSE, squareShape = 1,
-                     inflect = FALSE, arrow = arrow(), open = TRUE,
+                     inflect = FALSE, arrow = arrow(length = unit(0.1, "inches")), open = TRUE,
                      debug = FALSE,
-                     name = NULL, gp = gpar(lwd=3, lty=3, col="gray40"), vp = NULL)
+                     name = NULL, gp = gpar(lwd=1, lty=3, col="gray40"), vp = NULL)
 
 myCurve3c<-curveGrob(0, 0, 1, 1, default.units = "npc",
                      curvature = 0.2, angle = 60, ncp = 10, shape = 1,
                      square = FALSE, squareShape = 1,
-                     inflect = FALSE, arrow = arrow(), open = TRUE,
+                     inflect = FALSE, arrow = arrow(length = unit(0.1, "inches")), open = TRUE,
                      debug = FALSE,
-                     name = NULL, gp = gpar(lwd=3, lty=3, col=col.green), vp = NULL)
+                     name = NULL, gp = gpar(lwd=1, lty=3, col=col.green), vp = NULL)
 
 myCurve4<-curveGrob(0, 0, 1, 1, default.units = "npc",
                     curvature = 0, angle = 0, ncp = 10, shape = 1,
                     square = FALSE, squareShape = 1,
                     inflect = FALSE, arrow = NULL, open = TRUE,
                     debug = FALSE,
-                    name = NULL, gp = gpar(lwd=3), vp = NULL)
+                    name = NULL, gp = gpar(lwd=1), vp = NULL)
 
 #plot
 p<-ggplot(data=plot.data, aes(x=Lag, y=value, colour=Variable)) + 
-  geom_line(size=3, alpha=0.6) + 
+  geom_line(size=1, alpha=0.8) + 
   ylim(0,100) +
   geom_vline(xintercept=T0) + 
   geom_vline(xintercept=T1) + 
@@ -440,22 +472,27 @@ p<-ggplot(data=plot.data, aes(x=Lag, y=value, colour=Variable)) +
   # annotation_custom(grob=myCurve3b,T0,T0+0.5,17,49-1) +
   # annotation_custom(grob=myCurve3c,T0,T1,17,33) +
   annotation_custom(grob=myCurve4,T0+1,T1-1,0,0) +
-  geom_point(aes(x=T1, y=85), shape=21, color="gray20", fill=col.blue, size=6, stroke=1) +
+  geom_point(aes(x=T1, y=85), shape=21, color="gray20", fill=col.blue, size=2, stroke=0.5) +
   theme(axis.title.y=element_blank(),
         axis.title.x=element_blank(),
         axis.text.y=element_blank(), 
         axis.ticks.y=element_blank(),
         axis.line=element_blank(),
-        legend.position="bottom",
+        legend.margin=margin(-1, unit = "cm"),
         legend.text=element_text(size=legend.text.size),
         legend.title=element_text(size=legend.title.size),
-        axis.text.x=element_text(size=axis.text.size))
+        axis.text.x=element_text(size=axis.text.size),
+        plot.margin = unit(c(0.2, 0.2, 0.8, 0.2), units = "cm"),
+        legend.position = c(0.2, -0.4),
+        legend.direction = "horizontal") +
+  labs(color="Variables:")
     
 
 print(p)
 
 # invisible(print(grid.arrange(arrangeGrob(p))))
-ggsave(filename = "Figure_1.pdf", width=figure.width, height=4)
+ggsave(filename = "Figure_1.pdf", width=figure.width, height=2)
+# ggsave(filename = "/home/blas/Dropbox/RESEARCH/PROJECTS/MAIN_PROJECTS/IGNEX/GITHUB/Ecological-Memory/paper/figures/Figure_1.pdf", width=figure.width, height=2)
 
 #removing objects we don't need any longer
 rm(p, myCurve1, myCurve2, myCurve3, myCurve3b, myCurve3c, myCurve4, plot.data, T0, T1)
@@ -465,21 +502,18 @@ rm(list= ls()[!(ls() %in% to.preserve)])
 
 ```
 
-\newpage
 
-##Figure 2##
+## Figure 2
 
 This figure was generated with the package *yEd* (URL: www.yworks.com/products/yed).
 
-```{r, fig.width=7.25, fig.height=4, include=TRUE, fig.align="center", fig.cap="Model structure. Green and white boxes represent respectively the environment and elements relative to the virtual taxa. Light-gray boxes are the experimental variables, changing across model executions. Population dynamics (dashed ellipse) is the emergent process from which pollen production (blue box), the response variable, results.", echo=FALSE}
+```{r, fig.width=2.75, include=TRUE, fig.align="center", fig.cap="Model structure. Green and white boxes represent respectively the environment and elements relative to the virtual taxa. Light-gray boxes are the experimental variables, changing across model executions. Population dynamics (dashed ellipse) is the emergent process from which pollen production (blue box), the response variable, results.", echo=FALSE}
 knitr::include_graphics("Figure_2.pdf")
 ```
 
-\newpage
+## Figure 3
 
-##Figure 3##
-
-```{r, echo=FALSE, fig.height=7.25, fig.width=7.25, cache=TRUE, fig.cap="Panel a represents the different ecological niches used in the simulations. Light green colour represents the driver and marine blue represents the niche of the virtual taxa. Numbers in grey strips represent the mean (m) and standard deviation (sd) of the Gaussian functions used to define the niche. Panel b shows the dynamics of the driver  during 2000 years, and the suitability values returned by the different niche functions in panel a. Panel c shows the two combinations of life-span used in the simulations, with their respective growth rates, and sexual maturity indicated by a blue vertical line."}
+```{r, echo=FALSE, fig.height=3.75, fig.width=2.75, cache=FALSE, fig.cap="Panel a represents the different ecological niches used in the simulations. Light green colour represents the driver and marine blue represents the niche of the virtual taxa. Numbers in grey strips represent the mean (m) and standard deviation (sd) of the Gaussian functions used to define the niche. Panel b shows the dynamics of the driver  during 2000 years, and the suitability values returned by the different niche functions in panel a. Panel c shows the two combinations of life-span used in the simulations, with their respective growth rates, and sexual maturity indicated by a blue vertical line."}
 
 i=1
 parameters.plot <- parametersDataframe(rows=1)
@@ -538,25 +572,30 @@ plot.df$Species<-as.character(plot.df$Species)
 plot.df.niche<-plot.df[plot.df$Species %in% unique(plot.df$Species)[1:4], ]
 
 #niche plot
-#####################################################################
 plot.niche = ggplot(data=plot.df.niche, aes(x=Value, y=Suitability, group=Species)) + 
-  geom_ribbon(data=plot.df.niche, aes(ymin=0, ymax=Driver.density.y), color=col.gray.light, fill=col.blue, alpha=0.5) +
-  geom_ribbon(data=plot.df.niche, aes(ymin=0, ymax=Suitability), alpha=0.8, colour=NA, fill=col.green) +
-  geom_line(data=plot.df.niche, aes(x=Value, y=Driver.density.y), color=col.blue, alpha=0.5) +
+  geom_ribbon(data=plot.df.niche, aes(ymin=0, ymax=Driver.density.y), color=col.gray.light, fill=col.green, alpha=0.5, size=0.2) +
+  geom_ribbon(data=plot.df.niche, aes(ymin=0, ymax=Suitability), alpha=0.8, colour=NA, fill=col.blue, size=0.2) +
+  geom_line(data=plot.df.niche, aes(x=Value, y=Driver.density.y), color=col.green, alpha=0.5, size=0.2) +
   facet_wrap("Species", ncol=1) + 
   xlab("Driver values") + 
   ylab("Environmental suitability") + 
   theme(legend.position="none",
-        panel.spacing = unit(1, "lines"),
-        axis.text.x=element_text(size=axis.text.size/2),
-        axis.text.y=element_text(size=axis.text.size/2),
-        axis.title.x=element_text(size=axis.title.size),
-        axis.title.y=element_text(size=axis.title.size),
-        plot.margin = unit(c(2.35,0,0,0), "cm"))
+        panel.spacing = unit(0, "lines"),
+        axis.text.x=element_text(size=axis.text.size - 1),
+        axis.text.y=element_text(size=axis.text.size - 1),
+        axis.title.x=element_text(size=axis.title.size +2),
+        axis.title.y=element_text(size=axis.title.size +2),
+        plot.margin = unit(c(1.7,-0.1,0,0), "cm"),
+        strip.text.x = element_text(size = axis.text.size/1.1),
+        axis.line.x = element_line(size=0.05),
+        axis.line.y = element_line(size=0.05),
+        axis.ticks.x = element_line(size=0.05),
+        axis.ticks.y = element_line(size=0.05),
+        axis.ticks.length=unit(.1, "cm")) +
+  scale_x_continuous(breaks=c(0, 50, 100))
 
 
 #suitability plot
-##############################################################
 suitablity.50.10 = dnorm(x=driver.A, mean=50, sd=10)
 suitablity.50.10 = suitablity.50.10 / max(suitablity.50.10)
 suitablity.50.20 = dnorm(x=driver.A, mean=50, sd=20)
@@ -565,100 +604,78 @@ suitablity.75.10 = dnorm(x=driver.A, mean=75, sd=10)
 suitablity.75.10 = suitablity.75.10 / max(suitablity.75.10)
 suitablity.75.20 = dnorm(x=driver.A, mean=75, sd=20)
 suitablity.75.20 = suitablity.75.20 / max(suitablity.75.20)
-suitability.df <- data.frame(time=1:10000, Driver=driver.A, "m 50, sd 10"=suitablity.50.10, "m 50, sd 20"=suitablity.50.20, "m 75, sd 10"=suitablity.75.10, "m 75, sd 20"=suitablity.75.20)
+suitability.df <- data.frame(time=round(seq(1, 10000, length.out = length(driver.A)), 0), Driver=driver.A, "m 50, sd 10"=suitablity.50.10, "m 50, sd 20"=suitablity.50.20, "m 75, sd 10"=suitablity.75.10, "m 75, sd 20"=suitablity.75.20)
 suitability.df.long <- gather(suitability.df, variable, value, 2:6)
-suitability.df.long$color <- col.green
-suitability.df.long[suitability.df.long$variable=="Driver", "color"] <- col.blue
+suitability.df.long$color <- col.blue
+suitability.df.long[suitability.df.long$variable=="Driver", "color"] <- col.green
 
 plot.suitability<-ggplot(data=suitability.df.long, aes(x=time, y=value, group=variable)) + 
-  geom_line(colour = suitability.df.long$color) + 
+  geom_line(colour = suitability.df.long$color, size=0.2) + 
   facet_wrap("variable", ncol=1, scales="free_y") +
   ylab("") + 
   xlab("Time (years)") +
   theme(legend.position="none",
-        panel.spacing = unit(1, "lines"),
-        axis.text.x=element_text(size=axis.text.size/2),
-        axis.text.y=element_text(size=axis.text.size/2),
-        axis.title.x=element_text(size=axis.title.size),
-        axis.title.y=element_text(size=axis.title.size),
-        plot.margin = unit(c(0,0,0,0), "cm"),
-        strip.text.x = element_text(color = "white"),
-        strip.background = element_rect(fill="white")) +
+        panel.spacing = unit(0, "lines"),
+        axis.text.x=element_text(size=axis.text.size - 1),
+        axis.text.y=element_text(size=axis.text.size - 1),
+        axis.title.x=element_text(size=axis.title.size +2),
+        axis.title.y=element_text(size=axis.title.size +2),
+        plot.margin = unit(c(0.6,0.5,0,-0.1), "cm"),
+        strip.text.x = element_text(color = "white", size = axis.text.size/1.1),
+        strip.background = element_rect(fill="white"),
+        axis.line.x = element_line(size=0.05),
+        axis.line.y = element_line(size=0.05),
+        axis.ticks.x = element_line(size=0.05),
+        axis.ticks.y = element_line(size=0.05),
+        axis.ticks.length=unit(.1, "cm")) +
         coord_cartesian(xlim=c(4500, 6500))
 
 
-plot.niche.suitability <- plot_grid(plot.niche, plot.suitability, ncol=2, align="v", labels = c("a", "b"), rel_widths = c(0.5, 1))
+plot.niche.suitability <- plot_grid(plot.niche, plot.suitability, ncol=2, align="h", labels = c("a", "b"), rel_widths = c(0.4, 0.6), axis = "blr", label_size = 10)
 
 #growth plot
-#########################################################
 plot.df.growth<-plot.df[plot.df$Species %in% unique(plot.df$Species)[5:6], ]
-growth.plot = ggplot(data=plot.df.growth, aes(x=Age, y=Biomass, group=Species)) + 
-  geom_ribbon(ymin=0, ymax=plot.df.growth$Biomass, color="gray80", fill="gray80", alpha=0.5) + 
-  geom_line(aes(x=Reproductive.age, y=Biomass), color=col.green, size=2, alpha=0.8) + 
+growth.plot.temp = ggplot(data=plot.df.growth, aes(x=Age, y=Biomass, group=Species)) + 
+  geom_ribbon(ymin=0, ymax=plot.df.growth$Biomass, color="gray80", fill="gray80", alpha=0.5, size=0.2) + 
+  geom_line(aes(x=Reproductive.age, y=Biomass), color=col.blue, size=1, alpha=0.8) + 
   facet_wrap(facets="Species", ncol=2, strip.position="top", scales="free_x") + 
-  xlab("Age (years)") + 
+  xlab("Age of individuals (years)") + 
   ylab("Biomass") + 
   theme(legend.position="none",
         panel.spacing = unit(1, "lines"),
-        axis.text.x=element_text(size=axis.text.size/2),
-        axis.text.y=element_text(size=axis.text.size/2),
-        axis.title.x=element_text(size=axis.title.size),
-        axis.title.y=element_text(size=axis.title.size),
-        plot.margin = unit(c(1,0,0,0), "cm"))
+        axis.text.x=element_text(size=axis.text.size - 1),
+        axis.text.y=element_text(size=axis.text.size - 1),
+        axis.title.x=element_text(size=axis.title.size +2),
+        axis.title.y=element_text(size=axis.title.size+2),
+        plot.margin = unit(c(0.2,0.5,0,0), "cm"),
+        strip.text.x = element_text(size = axis.text.size/1.1),
+        axis.line.x = element_line(size=0.05),
+        axis.line.y = element_line(size=0.05),
+        axis.ticks.x = element_line(size=0.05),
+        axis.ticks.y = element_line(size=0.05),
+        axis.ticks.length=unit(.1, "cm"))
 
-growth.plot <- plot_grid(growth.plot, labels = "c")
+growth.plot <- plot_grid(growth.plot.temp, labels = "c", label_size = 10)
 
-plot_grid(plot.niche.suitability, growth.plot, rel_heights = c(4,1.5), ncol=1) + theme(plot.margin = unit(rep(0.5,4), "cm"))
-ggsave(filename = "Figure_3.pdf", width=figure.width, height=figure.width)
+plot_grid(plot.niche.suitability, growth.plot, rel_heights = c(figure.width, 1), ncol=1) 
 
-#removing objects not needed any longer
-rm(list= ls()[!(ls() %in% to.preserve)])
-
-
-```
-
-\newpage
-
-##Table 1##
-
-```{r, cache=FALSE, echo=FALSE}
-
-#creating copy of parameters
-parmeters.copy <- parameters
-
-#preparing data
-parmeters.copy$autocorrelation.length.A=NULL
-parmeters.copy$autocorrelation.length.B=NULL
-parmeters.copy$niche.B.mean=NULL
-parmeters.copy$niche.B.sd=NULL
-parmeters.copy$pollen.control=NULL
-parmeters.copy$maximum.biomass=NULL
-parmeters.copy$carrying.capacity=NULL
-parmeters.copy$driver.A.weight=NULL
-parmeters.copy$driver.B.weight=NULL
-
-parmeters.copy <- parmeters.copy[with(parmeters.copy, order(maximum.age, fecundity, niche.A.mean, niche.A.sd)),]
-parmeters.copy$label <- as.character(1:16)
-rownames(parmeters.copy)<-NULL
-
-#export table
-kable(parmeters.copy, col.names = c("ID", "Life-span", "Reproductive age", "Fecundity", "Growth rate", "Niche optimum", "Niche breadth"), caption = "Parameters of simulated taxa. The unites of Life-span and Reproductive age are years. Fecundity is the maximum number of viable seeds produced by an individual under ideal conditions. Growth rate is the slope of the logistic curve defining biomass growth. Niche optimum and niche breadth are expressed in driver units.", booktabs = T)  %>% 
-  kable_styling(full_width = F, latex_options = c("hold_position", "striped"))  %>%
-  column_spec(1:7, bold = F, color="#38598C") %>%
-  row_spec(0, bold=TRUE, color = "#585858")
+ggsave(filename = "Figure_3.pdf", width=figure.width, height=figure.width + 1)
 
 #removing objects not needed any longer
 rm(list= ls()[!(ls() %in% to.preserve)])
+
 ```
+
 
 \newpage
 
-##Figure 4##
+## Figure 4
 
-```{r, echo=FALSE, fig.height=5, fig.width=7.25, cache=TRUE, fig.cap="Example of ecological memory pattern showing the relative importance of each component at each time lag as computed by Random Forest. The ecological memory features measured are: a) strength of the concurrent effect (highlighted by a gray box); b) strength of the exogenous memory; c) strength of the endogenous component; d) length of the exogenous component; e) length of the endogenous component; f) dominance of the endogenous component; g) dominance of the exogenous component. Note that only data above the median of the Random variable (yellow line) are considered for the computations."}
+```{r, echo=FALSE, fig.height=1.75, fig.width=2.75, cache=FALSE, fig.cap="Example of ecological memory pattern showing the relative importance of each component at each time lag as computed by Random Forest. The ecological memory features measured are: a) strength of the concurrent effect (highlighted by a gray box); b) strength of the exogenous memory; c) strength of the endogenous component; d) length of the exogenous component; e) length of the endogenous component; f) dominance of the endogenous component; g) dominance of the exogenous component. Note that only data above the median of the Random variable (yellow line) are considered for the computations."}
 
-#getting data to plot
-x=E1.driver.df
+
+load("simtable.RData")
+x=E2.driver.df
 x<-x[x$label==unique(x$label)[1], ]
 x<-x[x$sampling==unique(x$sampling)[1], ]
 x<-x[, c("median", "min", "max", "Variable", "Lag")]
@@ -679,6 +696,7 @@ x[x$Variable=="Exogenous" & x$Lag >=120, "median"] <- x[x$Variable=="Exogenous" 
 x[x$Variable=="Exogenous" & x$Lag >=120, "min"] <- x[x$Variable=="Exogenous" & x$Lag >=120, "min"] - c(1,1.5,2,3.5,4,4,4.5)
 x[x$Variable=="Exogenous" & x$Lag >=120, "max"] <- x[x$Variable=="Exogenous" & x$Lag >=120, "max"] - c(1,1.5,2,3.5,4,4,4.5)
 
+
 x[x$Variable=="Exogenous" & x$Lag <=60, "median"] <- x[x$Variable=="Exogenous" & x$Lag <=60, "median"] -5
 x[x$Variable=="Exogenous" & x$Lag <=60, "min"] <- x[x$Variable=="Exogenous" & x$Lag <=60, "min"] - 5
 x[x$Variable=="Exogenous" & x$Lag <=60, "max"] <- x[x$Variable=="Exogenous" & x$Lag <=60, "max"] - 5
@@ -695,56 +713,75 @@ x[x$Variable=="Endogenous" & x$Lag <=80, "median"] <- x[x$Variable=="Endogenous"
 x[x$Variable=="Endogenous" & x$Lag <=80, "min"] <- x[x$Variable=="Endogenous" & x$Lag <=80, "min"] + c(0, 5, 4, 3)
 x[x$Variable=="Endogenous" & x$Lag <=80, "max"] <- x[x$Variable=="Endogenous" & x$Lag <=80, "max"] + c(0, 5, 4, 3)
 
-x[x$Variable=="Random", "median"] <- 8.4
-x[x$Variable=="Random", "max"] <- 11
+x[x$Variable=="Random", "median"] <- x[x$Variable=="Random", "median"] + 8
+x[x$Variable=="Random", "max"] <- x[x$Variable=="Random", "max"] + 9
+
+annotation.size=6
+legend.title.size=6
+legend.text.size=6
+axis.text.size=6
+axis.title.size=8
+annotation.factor=2.2
 
 
 #plot
-segment.size=1
-annotation.size=6
+segment.size=0.3
 ggplot(data=x, aes(x=Lag, y=median, group=Variable, color=Variable, fill=Variable)) +
-  geom_ribbon(aes(ymin=min, ymax=max), alpha=0.4, colour=NA) + 
-  geom_line(alpha=0.7, size=1.5) +
+  geom_ribbon(aes(ymin=min, ymax=max), alpha=0.3, colour=NA, size=0.2) + 
+  geom_line(alpha=1, size=0.5) +
   scale_color_manual(values=c(col.blue, col.green, "#FEEE62")) +
   scale_fill_manual(values=c(col.blue, col.green, "#FEEE62")) +
   scale_x_continuous(breaks=unique(x$Lag)) +
   xlab("Lag (years)") + 
   ylab("Relative importance") +
-  coord_cartesian(xlim=c(0, 180), ylim=c(0, 35)) +
+  coord_cartesian(xlim=c(0, 240), ylim=c(0, 35)) +
   annotate("rect", xmin = -5, xmax = 5, ymin = 25, ymax = 31, alpha = .2) +
-  annotate("text", x=19, y=33, label="Concurrent effect", color="gray40", size=annotation.size) + 
-  annotate("segment", x = 0, xend = 0, y = 8.2, yend = 28, colour = "gray60", size=segment.size) +
-  annotate("text", x=-5, y=18, label="a", color="gray60", size=annotation.size) +
-  annotate("segment", x = 19, xend = 19, y = 8.2, yend = 18.5, colour = "gray60", size=segment.size) +
-  annotate("text", x=15, y=15, label="b", color="gray60", size=annotation.size) +
-  annotate("segment", x = 21, xend = 21, y = 8.2, yend = 22.5, colour = "gray60", size=segment.size) +
-  annotate("text", x=25, y=13, label="c", color="gray60", size=annotation.size) +
-  annotate("segment", x = 20, xend = 170, y = 30, yend = 30, colour = "gray60", size=segment.size) +
-  annotate("text", x=90, y=32, label="d", color="gray60", size=annotation.size) +
-  annotate("segment", x = 20, xend = 100, y = 25, yend = 25, colour = "gray60", size=segment.size) +
-  annotate("text", x=60, y=27, label="e", color="gray60", size=annotation.size) +
-  annotate("segment", x = 20, xend = 83, y = 3, yend = 3, colour = "gray60", size=segment.size) +
-  annotate("text", x=55, y=5, label="f", color="gray60", size=annotation.size) +
-  annotate("segment", x = 83, xend = 170, y = 15, yend = 15, colour = "gray60", size=segment.size) +
-  annotate("text", x=125, y=18, label="g", color="gray60", size=annotation.size) +
+  annotate("text", x=30, y=33, label="Concurrent effect", color="gray40", size=annotation.size/3) + 
+  annotate("segment", x = 0, xend = 0, y = 8.2, yend = 28, colour = "gray40", size=segment.size/annotation.factor) +
+  annotate("text", x=-5, y=18, label="a", color="gray40", size=annotation.size/annotation.factor) +
+  annotate("segment", x = 19, xend = 19, y = 8.2, yend = 18.5, colour = "gray40", size=segment.size) +
+  annotate("text", x=15, y=15, label="b", color="gray40", size=annotation.size/annotation.factor) +
+  annotate("segment", x = 21, xend = 21, y = 8.2, yend = 22.5, colour = "gray40", size=segment.size) +
+  annotate("text", x=25, y=13, label="c", color="gray40", size=annotation.size/annotation.factor) +
+  annotate("segment", x = 20, xend = 170, y = 30, yend = 30, colour = "gray40", size=segment.size) +
+  annotate("text", x=90, y=32, label="d", color="gray40", size=annotation.size/annotation.factor) +
+  annotate("segment", x = 20, xend = 95, y = 25, yend = 25, colour = "gray40", size=segment.size) +
+  annotate("text", x=60, y=27, label="e", color="gray40", size=annotation.size/annotation.factor) +
+  annotate("segment", x = 20, xend = 83, y = 3, yend = 3, colour = "gray40", size=segment.size) +
+  annotate("text", x=55, y=5, label="f", color="gray40", size=annotation.size/annotation.factor) +
+  annotate("segment", x = 83, xend = 170, y = 15, yend = 15, colour = "gray40", size=segment.size) +
+  annotate("text", x=125, y=18, label="g", color="gray40", size=annotation.size/annotation.factor) +
   theme(legend.position="bottom",
       axis.text.x=element_text(size=axis.text.size),
       axis.text.y=element_text(size=axis.text.size),
       axis.title.x=element_text(size=axis.title.size),
       axis.title.y=element_text(size=axis.title.size),
-      plot.margin = unit(c(1,0,0,0), "cm"))
-ggsave(filename = "/home/blas/Dropbox/RESEARCH/PROJECTS/MAIN_PROJECTS/IGNEX/GITHUB/Ecological-Memory/paper/figures/Figure_4.pdf", width=figure.width, height=5)
+      plot.margin = unit(c(0.2,0.2,0.6,0.2), "cm"),
+      legend.margin=margin(c(-0.8, 0.3, -1, -1), unit = "lines"),
+      legend.text = element_text(size=annotation.size),
+      legend.title = element_text(size=annotation.size),
+      legend.key.height = unit(0.5, "line"),
+      legend.key.width = unit(0.5, "line"),
+      axis.line.x = element_line(size=0.05),
+      axis.line.y = element_line(size=0.05),
+      axis.ticks.x = element_line(size=0.05),
+      axis.ticks.y = element_line(size=0.05),
+      axis.ticks.length=unit(.1, "cm")) +
+  labs(color="Memory components:") +
+  guides(fill=FALSE)
+ggsave(filename = "Figure_4.pdf", width=figure.width, height=figure.width - 1)
+
 
 #removing objects not needed any longer
 rm(list= ls()[!(ls() %in% to.preserve)])
 ```
 
-\newpage
 
-##Figure 5##
+## Figure 5
 
-```{r, echo=FALSE, fig.height=5, fig.width=7.25, cache=TRUE, fig.cap="Driver (light green) and a subset of simulations (marine-blue) at the original Annual resolution (left panel), and resampled at 2 and 10cm intervals interpolated at 20 years resolution (centre and right panels)."}
-
+```{r, echo=FALSE, fig.height=2.75, fig.width=5.5, cache=FALSE, fig.cap="Driver (light green) and a subset of simulations (marine-blue) derived from the original Annual resolution (left panel), and resampled at 2 and 10cm (centre and right panels)."}
+#needs to reload data produced by Appendix I
+load("Appendix_I_output.RData")
 
 #getting time and driver for the Annual dataset
 simulations<-list()
@@ -776,29 +813,37 @@ for(i in 3:18){
 
 #to long format for easier plotting
 simulations.long<-gather(simulations, simulation, pollen, 2:18)
-simulations.long$color <- col.green
-simulations.long[simulations.long$simulation=="Driver", "color"] <- col.blue
+simulations.long$color <- col.blue
+simulations.long[simulations.long$simulation=="Driver", "color"] <- col.green
+
 #subset
 simulations.long<-simulations.long[simulations.long$simulation %in% c("Driver", "S1000A50-20_f10", "S1000A75-5_f1", "S10A50-20_f10", "S10A75-5_f1"),]
-simulations.long[simulations.long$simulation=="S1000A50-20_f10", "simulation"] <- "Ls 1000, f 10, No 50, Nb 20"
-simulations.long[simulations.long$simulation=="S1000A75-5_f1", "simulation"] <- "Ls 1000, f 1, No 75, Nb 10"
-simulations.long[simulations.long$simulation=="S10A50-20_f10", "simulation"] <- "Ls 10, f 10, No 50, Nb 20"
-simulations.long[simulations.long$simulation=="S10A75-5_f1", "simulation"] <- "Ls 10, f 1, No 75, Nb 10"
+simulations.long[simulations.long$simulation=="S1000A50-20_f10", "simulation"] <- "Ls 1000, F 10, No 50, Nb 20"
+simulations.long[simulations.long$simulation=="S1000A75-5_f1", "simulation"] <- "Ls 1000, F 1, No 75, Nb 10"
+simulations.long[simulations.long$simulation=="S10A50-20_f10", "simulation"] <- "Ls 10, F 10, No 50, Nb 20"
+simulations.long[simulations.long$simulation=="S10A75-5_f1", "simulation"] <- "Ls 10, F 1, No 75, Nb 10"
 
 #plot 1year
 sim.1cm <- ggplot(simulations.long, aes(x=Time, y=pollen, group=simulation)) +
-  geom_line(colour = simulations.long$color) +
+  geom_line(colour = simulations.long$color, size=0.3) +
   facet_wrap("simulation", scales="free_y", ncol=1) +
   coord_cartesian(xlim = c(4000, 6500)) +
-  theme(legend.position="bottom",
-        axis.text.x=element_text(size=axis.text.size/2),
-        axis.text.y=element_text(size=axis.text.size/2),
-        axis.title.x=element_text(size=axis.title.size/2),
-        axis.title.y=element_text(size=axis.title.size/2),
-        plot.margin = unit(c(1,0,0,0), "cm"),
-        plot.title = element_text(size=axis.title.size/1.5),
-        strip.text.x = element_text(size = 8)) +
-  ylab("") +
+  theme(legend.position="none",
+        axis.text.x=element_text(size=axis.text.size),
+        axis.text.y=element_text(size=axis.text.size),
+        axis.title.x=element_text(size=axis.title.size + 2),
+        axis.title.y=element_text(size=axis.title.size + 2),
+        plot.margin = unit(c(0.2,0,0,0), "cm"),
+        plot.title = element_text(size=axis.title.size),
+        strip.text.x = element_text(size = axis.text.size),
+        axis.line.x = element_line(size=0.05),
+        axis.line.y = element_line(size=0.05),
+        axis.ticks.x = element_line(size=0.05),
+        axis.ticks.y = element_line(size=0.05),
+        axis.ticks.length=unit(.1, "cm"),
+        panel.spacing = unit(0, "lines")) +
+  ylab("Pollen concentration (blue) and driver values (green)") +
+  xlab("") +
   ggtitle("Annual")
 
 #getting simulation data for dataset 2cm
@@ -821,30 +866,37 @@ for(i in 1:16){
 simulations<-data.frame(do.call("cbind", simulations))
 colnames(simulations)<-c("Time", "Driver", parameters$label)
 simulations.long<-gather(simulations, simulation, pollen, 2:18)
-simulations.long$color <- col.green
-simulations.long[simulations.long$simulation=="Driver", "color"] <- col.blue
+simulations.long$color <- col.blue
+simulations.long[simulations.long$simulation=="Driver", "color"] <- col.green
 #subset
 simulations.long<-simulations.long[simulations.long$simulation %in% c("Driver", "S1000A50-20_f10", "S1000A75-5_f1", "S10A50-20_f10", "S10A75-5_f1"),]
-simulations.long[simulations.long$simulation=="S1000A50-20_f10", "simulation"] <- "Ls 1000, f 10, No 50, Nb 20"
-simulations.long[simulations.long$simulation=="S1000A75-5_f1", "simulation"] <- "Ls 1000, f 1, No 75, Nb 10"
-simulations.long[simulations.long$simulation=="S10A50-20_f10", "simulation"] <- "Ls 10, f 10, No 50, Nb 20"
-simulations.long[simulations.long$simulation=="S10A75-5_f1", "simulation"] <- "Ls 10, f 1, No 75, Nb 10"
+simulations.long[simulations.long$simulation=="S1000A50-20_f10", "simulation"] <- "Ls 1000, F 10, No 50, Nb 20"
+simulations.long[simulations.long$simulation=="S1000A75-5_f1", "simulation"] <- "Ls 1000, F 1, No 75, Nb 10"
+simulations.long[simulations.long$simulation=="S10A50-20_f10", "simulation"] <- "Ls 10, F 10, No 50, Nb 20"
+simulations.long[simulations.long$simulation=="S10A75-5_f1", "simulation"] <- "Ls 10, F 1, No 75, Nb 10"
 
 #plot 2cm
 sim.2cm <- ggplot(simulations.long, aes(x=Time, y=pollen, group=simulation)) +
-  geom_line(colour = simulations.long$color) +
+  geom_line(colour = simulations.long$color, size=0.3) +
   facet_wrap("simulation", scales="free_y", ncol=1) +
   coord_cartesian(xlim = c(4000, 6500)) +
-  theme(legend.position="bottom",
-        axis.text.x=element_text(size=axis.text.size/2),
-        axis.text.y=element_text(size=axis.text.size/2),
-        axis.title.x=element_text(size=axis.title.size/2),
-        axis.title.y=element_text(size=axis.title.size/2),
-        plot.margin = unit(c(1,0,0,0), "cm"),
-        plot.title = element_text(size=axis.title.size/1.5), panel.spacing = unit(1, "lines"),
-        strip.text.x = element_text(color = "white"),
-        strip.background = element_rect(fill="white")) +
+  theme(legend.position="none",
+        axis.text.x=element_text(size=axis.text.size),
+        axis.text.y=element_text(size=axis.text.size),
+        axis.title.x=element_text(size=axis.title.size + 2),
+        axis.title.y=element_text(size=axis.title.size + 2),
+        plot.margin = unit(c(0.2,0,0,0), "cm"),
+        plot.title = element_text(size=axis.title.size),
+        axis.line.x = element_line(size=0.05),
+        axis.line.y = element_line(size=0.05),
+        axis.ticks.x = element_line(size=0.05),
+        axis.ticks.y = element_line(size=0.05),
+        axis.ticks.length=unit(.1, "cm"),
+        panel.spacing = unit(0, "lines"),
+        strip.text.x = element_text(color = "white", size = axis.text.size),
+        strip.background = element_rect(fill="white"))  +
   ylab("") +
+  xlab("Time (years)") +
   ggtitle("2cm")
 
 
@@ -866,34 +918,42 @@ for(i in 1:16){
 simulations<-data.frame(do.call("cbind", simulations))
 colnames(simulations)<-c("Time", "Driver", parameters$label)
 simulations.long<-gather(simulations, simulation, pollen, 2:18)
-simulations.long$color <- col.green
-simulations.long[simulations.long$simulation=="Driver", "color"] <- col.blue
+simulations.long$color <- col.blue
+simulations.long[simulations.long$simulation=="Driver", "color"] <- col.green
 #subset
 simulations.long<-simulations.long[simulations.long$simulation %in% c("Driver", "S1000A50-20_f10", "S1000A75-5_f1", "S10A50-20_f10", "S10A75-5_f1"),]
-simulations.long[simulations.long$simulation=="S1000A50-20_f10", "simulation"] <- "Ls 1000, f 10, No 50, Nb 20"
-simulations.long[simulations.long$simulation=="S1000A75-5_f1", "simulation"] <- "Ls 1000, f 1, No 75, Nb 10"
-simulations.long[simulations.long$simulation=="S10A50-20_f10", "simulation"] <- "Ls 10, f 10, No 50, Nb 20"
-simulations.long[simulations.long$simulation=="S10A75-5_f1", "simulation"] <- "Ls 10, f 1, No 75, Nb 10"
+simulations.long[simulations.long$simulation=="S1000A50-20_f10", "simulation"] <- "Ls 1000, F 10, No 50, Nb 20"
+simulations.long[simulations.long$simulation=="S1000A75-5_f1", "simulation"] <- "Ls 1000, F 1, No 75, Nb 10"
+simulations.long[simulations.long$simulation=="S10A50-20_f10", "simulation"] <- "Ls 10, F 10, No 50, Nb 20"
+simulations.long[simulations.long$simulation=="S10A75-5_f1", "simulation"] <- "Ls 10, F 1, No 75, Nb 10"
 
 #plot 2cm
+#plot 10cm
 sim.10cm <- ggplot(simulations.long, aes(x=Time, y=pollen, group=simulation)) +
-  geom_line(colour = simulations.long$color) +
+  geom_line(colour = simulations.long$color, size=0.3) +
   facet_wrap("simulation", scales="free_y", ncol=1) +
   coord_cartesian(xlim = c(4000, 6500)) +
-  theme(legend.position="bottom",
-        axis.text.x=element_text(size=axis.text.size/2),
-        axis.text.y=element_text(size=axis.text.size/2),
-        axis.title.x=element_text(size=axis.title.size/2),
-        axis.title.y=element_text(size=axis.title.size/2),
-        plot.margin = unit(c(1,0,0,0), "cm"),
-        plot.title = element_text(size=axis.title.size/1.5), panel.spacing = unit(1, "lines"),
-        strip.text.x = element_text(color = "white"),
-        strip.background = element_rect(fill="white")) +
+  theme(legend.position="none",
+        axis.text.x=element_text(size=axis.text.size),
+        axis.text.y=element_text(size=axis.text.size),
+        axis.title.x=element_text(size=axis.title.size + 2),
+        axis.title.y=element_text(size=axis.title.size + 2),
+        plot.margin = unit(c(0.2,0.2,0,0), "cm"),
+        plot.title = element_text(size=axis.title.size),
+        axis.line.x = element_line(size=0.05),
+        axis.line.y = element_line(size=0.05),
+        axis.ticks.x = element_line(size=0.05),
+        axis.ticks.y = element_line(size=0.05),
+        axis.ticks.length=unit(.1, "cm"),
+        panel.spacing = unit(0, "lines"),
+        strip.text.x = element_text(color = "white", size = axis.text.size),
+        strip.background = element_rect(fill="white"))  +
   ylab("") +
+  xlab("") +
   ggtitle("10cm")
 
-plot_grid(sim.1cm, sim.2cm, sim.10cm, ncol=3) + theme(plot.margin = unit(c(0,1,0,0), "cm"))
-ggsave(filename = "Figure_5.pdf", width=figure.width, height=5)
+plot_grid(sim.1cm, sim.2cm, sim.10cm, ncol=3, align="h") 
+ggsave(filename = "Figure_5.pdf", width=figure.width*2, height=figure.width+1)
 
 #removing objects not needed any longer
 rm(list= ls()[!(ls() %in% to.preserve)])
@@ -902,7 +962,7 @@ rm(list= ls()[!(ls() %in% to.preserve)])
 
 \newpage
 
-##Table 2##
+## Table 1
 
 ```{r, echo=FALSE, cache=FALSE}
 #preparing correlation matrix
@@ -948,67 +1008,18 @@ correlation.matrix <- na.omit(correlation.matrix)
 rownames(correlation.matrix)<-NULL
 
 #export table
+kable(correlation.matrix, format="html", row.names=NA, col.names = c("Life-span", "Fecundity", "Niche optimum", "Niche breadth", "Annual", "1cm", "2cm", "6cm", "10cm"), caption="Pearson correlation index between simulated pollen curves and the driver at different sampling resolutions (columns Annual, 1cm, 2cm, 6cm, and 10cm), compared with niche and life traits used for the simulations.", booktabs = T)  %>% 
+  kable_styling(full_width = F, latex_options = c("hold_position", "striped")) %>%
+  column_spec(1:9, bold = F, color="#38598C") %>%
+  row_spec(0, bold=TRUE, color = "#585858") %>%
+  cat(., file = "table2.html")
+
+#print table
 kable(correlation.matrix, row.names=NA, col.names = c("Life-span", "Fecundity", "Niche optimum", "Niche breadth", "Annual", "1cm", "2cm", "6cm", "10cm"), caption="Pearson correlation index between simulated pollen curves and the driver at different sampling resolutions (columns Annual, 1cm, 2cm, 6cm, and 10cm), compared with niche and life traits used for the simulations.", booktabs = T)  %>% 
   kable_styling(full_width = F, latex_options = c("hold_position", "striped")) %>%
   column_spec(1:9, bold = F, color="#38598C") %>%
   row_spec(0, bold=TRUE, color = "#585858")
 
-#removing objects not needed any longer
-rm(list= ls()[!(ls() %in% to.preserve)])
-```
-
-\newpage
-
-##Figure 6##
-
-```{r, echo=FALSE, fig.height=5, fig.width=3.625, cache=FALSE, fig.cap="Effect of sediment accumulation rate on ecological memory patterns. Each row represents a virtual taxa (ID codes in vertical stripes correspond with the ones in Table 1) for which ecological memory showed contrasting patterns between the Annual and the 1cm datasets.)."}
-
-#1a: compare model outcomes for the “annual” and “1cm” datasets of each taxa
-#############################################################################
-
-E1.driver.acc.rate <- E1.driver.df[E1.driver.df$sampling %in% c("1cm", "Annual"), ]
-E1.driver.acc.rate$Variable=as.character(E1.driver.acc.rate$Variable)
-E1.driver.acc.rate[E1.driver.acc.rate$Variable=="Response", "Variable"]="Endogenous"
-E1.driver.acc.rate[E1.driver.acc.rate$Variable=="Driver.A", "Variable"]="Exogenous"
-E1.driver.acc.rate$sampling<-factor(E1.driver.acc.rate$sampling, levels = c("Annual", "1cm"))
-
-E1.driver.acc.rate$label<-as.character(E1.driver.acc.rate$label)
-#selecting taxa that showed differences in memory patterns between Annual and 1cm datasets
-selected.taxa.index <- c(4,6,10)
-selected.taxa.label<-parameters[selected.taxa.index, "label"]
-E1.driver.acc.rate<-E1.driver.acc.rate[E1.driver.acc.rate$label %in% selected.taxa.label, ]
-
-#changing names by indexes
-for(i in 1:length(selected.taxa.index)){
-  taxa.label <- selected.taxa.label[i]
-  taxa.index <- selected.taxa.index[i]
-E1.driver.acc.rate[E1.driver.acc.rate$label==taxa.label, "label"]<-taxa.index
-}
-
-#levels in order for plot
-E1.driver.acc.rate$label<-factor(E1.driver.acc.rate$label, levels=as.character(selected.taxa.index))
-
-ggplot(data=E1.driver.acc.rate, aes(x=Lag, y=median, group=Variable, color=Variable, fill=Variable)) +
-  geom_ribbon(aes(ymin=min, ymax=max), alpha=0.4, colour=NA) + 
-  geom_line(alpha=0.7, size=1.5) +
-  scale_color_manual(values=c(col.green, col.blue, "#FEEE62")) +
-  scale_fill_manual(values=c(col.green, col.blue, "#FEEE62")) +
-  scale_x_continuous(breaks=unique(E1.driver.acc.rate$Lag)) +
-  scale_y_continuous(breaks=seq(0, max(E1.driver.acc.rate$median), by=20)) +
-  facet_grid(rows = vars(label), cols = vars(sampling)) + 
-  coord_cartesian(xlim=c(0, 40), ylim=c(8, 40)) +
-  xlab("Lag (years)") + 
-  ylab("Relative importance") +
-  theme(legend.position="bottom",
-        axis.text.x=element_text(size=axis.text.size/2),
-        axis.text.y=element_text(size=axis.text.size/2),
-        axis.title.x=element_text(size=axis.title.size/2),
-        axis.title.y=element_text(size=axis.title.size/2),
-        plot.margin = unit(c(1,1,0,0), "cm"),
-        legend.text=element_text(size=legend.text.size/2),
-        legend.title=element_text(size=legend.title.size/2)) +
-  background_grid()
-ggsave(filename = "Figure_6.pdf", width=figure.width/2, height=9)
 
 #removing objects not needed any longer
 rm(list= ls()[!(ls() %in% to.preserve)])
@@ -1016,15 +1027,98 @@ rm(list= ls()[!(ls() %in% to.preserve)])
 
 \newpage
 
-##Figure 7##
+## Figure 6
 
-```{r, echo=FALSE, fig.height=7.25, message=FALSE, warning=FALSE, error=FALSE, fig.width=3.625, cache=TRUE, fig.cap="Ecological memory features across decreasing sampling densities. Dots represent virtual taxa (horizontal jitter was applied to the points for ease of examination). Dot colour and size represent niche traits. Linear model was fitted with the lm function of the R package."}
+```{r, echo=FALSE, fig.height=2.75, fig.width=2.75, cache=FALSE, fig.cap="Effect of variable sediment accumulation rate on ecological memory features. Dots represent virtual taxa. Values of the x axis show the difference in ecological memory features when substracting those of the 1cm dataset (variable accumulation rate) to those of the Annual dataset (constant accumulation rate). Violin-plots, in blue, show the underlying distribution of the data. Vertical blue lines represent the median."}
 
-E1.driver.sampling <- E1.driver.df[E1.driver.df$sampling %in% c("1cm", "2cm", "6cm", "10cm"), ]
+#getting features
+E1.driver.sampling <- E1.driver.df[E1.driver.df$sampling %in% c("Annual", "1cm"), ]
 E1.driver.sampling$Variable=as.character(E1.driver.sampling$Variable)
 E1.driver.sampling[E1.driver.sampling$Variable=="Response", "Variable"]="Endogenous"
 E1.driver.sampling[E1.driver.sampling$Variable=="Driver.A", "Variable"]="Exogenous"
-E1.driver.sampling$sampling<-factor(E1.driver.sampling$sampling, levels = c("1cm", "2cm", "6cm", "10cm"))
+
+#separating datasets
+xAnnual <- extractMemoryFeatures(memory.pattern=E1.driver.sampling,
+                              exogenous.component="Exogenous", 
+                              endogenous.component="Endogenous", 
+                              sampling.subset="Annual",
+                              scale.strength = FALSE)
+
+x1cm <- extractMemoryFeatures(memory.pattern=E1.driver.sampling,
+                              exogenous.component="Exogenous", 
+                              endogenous.component="Endogenous", 
+                              sampling.subset="1cm",
+                              scale.strength = FALSE)
+
+#putting datasets together to scale strength
+xAnnual$id <- "Annual"
+x1cm$id <- "1cm"
+temp <- rbind(xAnnual, x1cm)
+
+#scaling strength between 0 and 1
+temp$strength.concurrent <- temp$strength.concurrent / max(temp$strength.concurrent)
+temp$strength.exogenous <- temp$strength.exogenous / max(temp$strength.exogenous)
+temp$strength.endogenous <- temp$strength.endogenous / max(temp$strength.endogenous)
+
+#separatind datasets
+xAnnual <- temp[temp$id == "Annual", ]
+x1cm <- temp[temp$id == "1cm", ]
+
+
+#differences between datasets
+xDiff <- xAnnual
+for(i in 2:8){
+  xDiff[,i] <- x1cm[,i] - xAnnual[,i]
+}
+
+#to long format
+xDiff.long <- gather(xDiff, mem.feature.name, mem.feature.value, 2:8)
+
+#tidy names
+xDiff.long[xDiff.long$mem.feature.name=="dominance.endogenous", "mem.feature.name"]<-"Dominance - endogenous"
+xDiff.long[xDiff.long$mem.feature.name=="dominance.exogenous", "mem.feature.name"]<-"Dominance - exogenous"
+xDiff.long[xDiff.long$mem.feature.name=="length.endogenous", "mem.feature.name"]<-"Length - endogenous"
+xDiff.long[xDiff.long$mem.feature.name=="length.exogenous", "mem.feature.name"]<-"Length - exogenous"
+xDiff.long[xDiff.long$mem.feature.name=="strength.concurrent", "mem.feature.name"]<-"Strength - concurrent"
+xDiff.long[xDiff.long$mem.feature.name=="strength.endogenous", "mem.feature.name"]<-"Strength - endogenous"
+xDiff.long[xDiff.long$mem.feature.name=="strength.exogenous", "mem.feature.name"]<-"Strength - exogenous"
+
+#factor order
+xDiff.long$mem.feature.name <- factor(xDiff.long$mem.feature.name, levels=rev(c("Strength - concurrent", "Strength - endogenous", "Length - endogenous", "Dominance - endogenous", "Strength - exogenous", "Length - exogenous", "Dominance - exogenous")))
+
+#plot
+ggplot(xDiff.long, aes(y=mem.feature.value, x=as.factor(mem.feature.name))) + 
+  geom_hline(yintercept = 0, color = "gray80", size=0.5, alpha=0.5) +
+  geom_violin(draw_quantiles = 0.5, color="gray50", fill = "transparent", size=0.2) +
+  geom_point(size=1.5, alpha=0.7, position = position_jitter(w = 0.3, h = 0), fill = col.green, shape=21, color="gray20", stroke = 0.1) +
+  xlab("") +
+  ylab("") +
+  theme(plot.margin = unit(c(0.2, 0.2, 0.2, -0.6), "cm"),
+        legend.position="none",
+        axis.text.x=element_text(size=axis.text.size),
+        axis.text.y=element_text(size=axis.text.size +2),
+        axis.title.x=element_text(size=axis.title.size + 2),
+        axis.title.y=element_text(size=axis.title.size + 2),
+        plot.title = element_text(size=axis.title.size),
+        axis.line.x = element_line(size=0.05),
+        axis.line.y = element_line(size=0.05),
+        axis.ticks.x = element_line(size=0.05),
+        axis.ticks.y = element_line(size=0.05),
+        axis.ticks.length=unit(.1, "cm")) +
+  ylab("Difference induced by \n accumulation rate") +
+  coord_flip()
+
+ggsave(filename = "Figure_6.pdf", width=figure.width, height=figure.width)
+
+#removing objects not needed any longer
+rm(list= ls()[!(ls() %in% to.preserve)])
+```
+
+\newpage
+
+## Figure 7
+
+```{r, echo=FALSE, fig.height=4.75, message=FALSE, warning=FALSE, error=FALSE, fig.width=2.75, cache=FALSE, fig.cap="Ecological memory features across decreasing sampling densities. Dots represent virtual taxa (horizontal jitter was applied to the points for ease of examination)."}
 
 #getting features
 E1.driver.sampling <- E1.driver.df[E1.driver.df$sampling %in% c("1cm", "2cm", "6cm", "10cm"), ]
@@ -1034,32 +1128,42 @@ E1.driver.sampling[E1.driver.sampling$Variable=="Driver.A", "Variable"]="Exogeno
 E1.driver.sampling$sampling<-factor(E1.driver.sampling$sampling, levels = c("1cm", "2cm", "6cm", "10cm"))
 
 #separating datasets
-x1cm <- extractMemoryFeatures(analysis.output=E1.driver.sampling,
+x1cm <- extractMemoryFeatures(memory.pattern=E1.driver.sampling,
                               exogenous.component="Exogenous", 
                               endogenous.component="Endogenous", 
-                              sampling.subset="1cm")
+                              sampling.subset="1cm",
+                              scale.strength = FALSE)
 x1cm$cm=1
 
-x2cm <- extractMemoryFeatures(analysis.output=E1.driver.sampling,
+x2cm <- extractMemoryFeatures(memory.pattern=E1.driver.sampling,
                               exogenous.component="Exogenous",
                               endogenous.component="Endogenous",
-                              sampling.subset="2cm")
+                              sampling.subset="2cm",
+                              scale.strength = FALSE)
 x2cm$cm=2
 
-x6cm <- extractMemoryFeatures(analysis.output=E1.driver.sampling,
+x6cm <- extractMemoryFeatures(memory.pattern=E1.driver.sampling,
                               exogenous.component="Exogenous",
                               endogenous.component="Endogenous",
-                              sampling.subset="6cm")
+                              sampling.subset="6cm",
+                              scale.strength = FALSE)
 x6cm$cm=6
 
-x10cm <- extractMemoryFeatures(analysis.output=E1.driver.sampling,
+x10cm <- extractMemoryFeatures(memory.pattern=E1.driver.sampling,
                                exogenous.component="Exogenous",
                                endogenous.component="Endogenous",
-                               sampling.subset="10cm")
+                               sampling.subset="10cm",
+                              scale.strength = FALSE)
 x10cm$cm=10
 
 #into a single dataframe
 x.cm <- rbind(x1cm, x2cm, x6cm, x10cm)
+
+#scaling strength
+#scaling strength between 0 and 1
+x.cm$strength.concurrent <- x.cm$strength.concurrent / max(x.cm$strength.concurrent)
+x.cm$strength.exogenous <- x.cm$strength.exogenous / max(x.cm$strength.exogenous)
+x.cm$strength.endogenous <- x.cm$strength.endogenous / max(x.cm$strength.endogenous)
 
 #long format for plotting
 x.cm.long <- gather(x.cm, feature, value, 2:8)
@@ -1078,28 +1182,38 @@ x.cm.long[x.cm.long$feature=="strength.concurrent", "feature"]<-"Strength - conc
 x.cm.long[x.cm.long$feature=="strength.endogenous", "feature"]<-"Strength - endogenous"
 x.cm.long[x.cm.long$feature=="strength.exogenous", "feature"]<-"Strength - exogenous"
 
+#factor order
+x.cm.long$feature <- factor(x.cm.long$feature, levels=c("Strength - concurrent", "Strength - endogenous", "Length - endogenous", "Dominance - endogenous", "Strength - exogenous", "Length - exogenous", "Dominance - exogenous"))
+
 #yeah, the plot
 ggplot(x.cm.long, aes(x=cm, y=value)) +
-  geom_point(aes(fill=niche.mean, size=niche.sd, group=cm), shape=21, color="gray20", alpha=0.5, position=position_jitter(width = 0.2, height = 0)) +
-  scale_size_discrete(range = c(1, 3)) +
-  facet_wrap("feature", scales="free_y", ncol=1) +
+  geom_point(size=1, position = position_jitter(w = 0.2, h = 0.01), fill = col.green, shape=21, color="gray20", stroke = 0.1) +
+  # geom_point(aes(group=cm), shape=21, color="gray20", alpha=0.5, position=position_jitter(width = 0.2, height = 0)) +
+  facet_wrap("feature", ncol=1) +
   scale_x_continuous(breaks=c(1,2,6,10)) +
   scale_fill_manual(values=c(col.green, "#FEEE62")) +
-  geom_smooth(aes(group=feature), method = lm, se = TRUE, color="gray40") +
-  xlab("Sampling interval (cm)") +
+  geom_smooth(aes(group=feature), method = lm, se = TRUE, color=col.blue, size=0.5) +
+  xlab("Pollen sampling interval (cm)") +
   ylab("") +
-  labs(fill="Niche optimum", size="Niche breadth") +
+  labs(fill="Niche optimum", size="Maximum age") +
   theme(axis.text.x = element_text(size=12), legend.text=element_text(size=8), legend.title = element_text(size=10)) +
-  guides(fill = guide_legend(override.aes = list(size = 5))) + theme(legend.position="bottom",
-      axis.text.x=element_text(size=axis.text.size/2),
-      axis.text.y=element_text(size=axis.text.size/2),
-      axis.title.x=element_text(size=axis.title.size/2),
-      axis.title.y=element_text(size=axis.title.size/2),
-      plot.margin = unit(c(1,1,0,0), "cm"),
-      legend.text=element_text(size=legend.text.size/2.5),
-      legend.title=element_text(size=legend.title.size/2),
-      strip.text.x = element_text(size = axis.title.size/2))
-ggsave(filename = "/home/blas/Dropbox/RESEARCH/PROJECTS/MAIN_PROJECTS/IGNEX/GITHUB/Ecological-Memory/paper/figures/Figure_7.pdf", width=figure.width/2, height=figure.width)
+  guides(fill = guide_legend(override.aes = list(size = 5))) + 
+  theme(legend.position="bottom",
+      axis.text.x=element_text(size=axis.text.size +2),
+      axis.text.y=element_text(size=axis.text.size),
+      axis.title.x=element_text(size=axis.title.size + 2),
+      axis.title.y=element_text(size=axis.title.size),
+      plot.margin = unit(c(0.2,0.2,0,-0.2), "cm"),
+      strip.text.x = element_text(size = axis.title.size, margin=margin(0,0,0.05,0, "cm")),
+      panel.spacing = unit(0, "lines"),
+      axis.line.x = element_line(size=0.05),
+        axis.line.y = element_line(size=0.05),
+        axis.ticks.x = element_line(size=0.05),
+        axis.ticks.y = element_line(size=0.05),
+        axis.ticks.length=unit(.1, "cm"),
+      panel.grid.major.y = element_line( size=.1, color="gray80" ))
+
+ggsave(filename = "Figure_7.pdf", width=figure.width, height=figure.width + 2)
 
 #removing objects not needed any longer
 rm(list= ls()[!(ls() %in% to.preserve)])
@@ -1107,136 +1221,210 @@ rm(list= ls()[!(ls() %in% to.preserve)])
 
 \newpage
 
-##Figure 8##
+## Figure 8
 
-```{r, echo=FALSE, fig.height=3.5, message=FALSE, warning=FALSE, error=FALSE, fig.width=3.625, cache=TRUE, fig.cap="Change in strength of the endogenous and exogenous memory components when using driver instead of suitability to quantify ecological memory. Values represent changes in endogenous (horizontal axis) and exogenous (vertical axis) memory strength when using the driver to analyse ecological memory, instead of the suitability index produced from the driver by the niche function of the virtual taxa. Colours represent values of the niche optimum of the virtual taxa."}
+```{r, echo=FALSE, fig.height=3.5, message=FALSE, warning=FALSE, error=FALSE, fig.width=3.625, cache=FALSE, fig.cap="Change in values of the different ecological memory features when using driver as exogenous memory component instead of suitability. Colors represent niche breadth (higher if blue), and size represent niche position (larger for a marginal niche position)."}
 
 #extracting memory features of the suitability data
-features.suitability = extractMemoryFeatures(analysis.output =
-                                               E1.suitability.df,
-                                             exogenous.component = "Suitability",
-                                             endogenous.component = "Response",
-                                             sampling.subset = "1cm")
+features.suitability = extractMemoryFeatures(memory.pattern = E1.suitability.df, 
+                                             exogenous.component = "Suitability", 
+                                             endogenous.component = "Response", 
+                                             sampling.subset = "Annual", 
+                                             scale.strength = FALSE)
 features.suitability$experiment="suitability"
 
 #extracting memory features of the driver data
-features.driver = extractMemoryFeatures(analysis.output = E1.driver.df, 
-                                             exogenous.component = "Driver.A", 
-                                             endogenous.component = "Response",
-                                             sampling.subset = "1cm")
+features.driver = extractMemoryFeatures(memory.pattern = E1.driver.df,
+                                        exogenous.component = "Driver.A", 
+                                        endogenous.component = "Response", 
+                                        sampling.subset = "Annual", 
+                                        scale.strength = FALSE)
 features.driver$experiment="driver"
+
+#together to scale strength
+temp <- rbind(features.suitability, features.driver)
+
+#scaling strength between 0 and 1
+temp$strength.concurrent <- temp$strength.concurrent / max(temp$strength.concurrent)
+temp$strength.exogenous <- temp$strength.exogenous / max(temp$strength.exogenous)
+temp$strength.endogenous <- temp$strength.endogenous / max(temp$strength.endogenous)
+
+#separatind datasets
+features.suitability <- temp[temp$experiment == "suitability", ]
+features.driver <- temp[temp$experiment == "driver", ]
+
 
 #differences between datasets: DRIVER - SUITABILITY
 differences <- features.driver
 for(i in 2:8){
-  differences[,i]<-features.driver[,i]-features.suitability[,i]
+  differences[,i]<- features.driver[,i] - features.suitability[,i]
 }
 differences$niche.mean=as.factor(differences$niche.mean)
 differences$niche.sd=as.factor(differences$niche.sd)
 differences$maximum.age=as.factor(differences$maximum.age)
 
+#identifying 
+
+#to long
+differences.long <- gather(differences, mem.feature.name, mem.feature.value, 2:8)
+
+#factors
+differences.long$maximum.age <- as.factor(differences.long$maximum.age )
+differences.long$fecundity <- as.factor(differences.long$fecundity )
+differences.long$niche.mean <- as.factor(differences.long$niche.mean )
+differences.long$niche.sd <- as.factor(differences.long$niche.sd )
+
+#tidy names
+differences.long[differences.long$mem.feature.name=="dominance.endogenous", "mem.feature.name"]<-"Dominance - endogenous"
+differences.long[differences.long$mem.feature.name=="dominance.exogenous", "mem.feature.name"]<-"Dominance - exogenous"
+differences.long[differences.long$mem.feature.name=="length.endogenous", "mem.feature.name"]<-"Length - endogenous"
+differences.long[differences.long$mem.feature.name=="length.exogenous", "mem.feature.name"]<-"Length - exogenous"
+differences.long[differences.long$mem.feature.name=="strength.concurrent", "mem.feature.name"]<-"Strength - concurrent"
+differences.long[differences.long$mem.feature.name=="strength.endogenous", "mem.feature.name"]<-"Strength - endogenous"
+differences.long[differences.long$mem.feature.name=="strength.exogenous", "mem.feature.name"]<-"Strength - exogenous"
+
+#factor order
+differences.long$mem.feature.name <- factor(differences.long$mem.feature.name, levels=rev(c("Strength - concurrent", "Strength - endogenous", "Length - endogenous", "Dominance - endogenous", "Strength - exogenous", "Length - exogenous", "Dominance - exogenous")))
+
+
+
 #plot
-ggplot(differences, aes(x=strength.endogenous, y=strength.exogenous, group=label, fill=niche.mean)) +
-  geom_point(shape=21, color="gray20", alpha=0.5, size=4.5) +
-  scale_x_continuous(breaks=seq(-1, 2, by=0.5)) +
-  scale_y_continuous(breaks=seq(-2, 1, by=0.5)) +
-  scale_fill_manual(values=c(col.green, "#FEEE62")) +
-  xlab("Strength - endogenous") +
-  ylab("Strength - exogenous") +
-  labs(fill="Niche optimum", size="Niche breadth") +
-  theme(axis.text.x = element_text(size=12), legend.text=element_text(size=8), legend.title = element_text(size=10)) +
-  guides(fill = guide_legend(override.aes = list(size = 5))) + theme(legend.position="bottom",
-                                                                     axis.text.x=element_text(size=axis.text.size/1.5),
-                                                                     axis.text.y=element_text(size=axis.text.size/1.5),
-                                                                     axis.title.x=element_text(size=axis.title.size/1.5),
-                                                                     axis.title.y=element_text(size=axis.title.size/1.5),
-                                                                     plot.margin = unit(c(1,1,1,1), "cm"),
-                                                                     legend.text=element_text(size=legend.text.size/1.5),
-                                                                     legend.title=element_text(size=legend.title.size/1.5))
-ggsave("Figure_8.pdf", width=figure.width/2, height=3.5)
+ggplot(differences.long, aes(y=mem.feature.value, x=mem.feature.name)) + 
+  geom_hline(yintercept = 0, color = "gray80", size=0.5, alpha=0.5) +
+  geom_violin(draw_quantiles = 0.5, color="gray50", fill = "transparent", size=0.2) +
+  geom_point(aes(fill=niche.sd, size=niche.mean), position = position_jitter(w = 0.3, h = 0), shape=21, color="gray20", stroke = 0.1, alpha=0.6) +
+    scale_fill_manual(values=c(col.green, col.blue)) +
+    scale_size_discrete(range = c(1, 2)) +
+  xlab("") +
+  ylab("") +
+  theme(plot.margin = unit(c(0.2, 0.3, 0.2, -0.5), "cm"),
+        legend.position="bottom",
+        axis.text.x=element_text(size=axis.text.size +2),
+        axis.text.y=element_text(size=axis.text.size),
+        axis.title.x=element_text(size=axis.title.size + 2),
+        axis.title.y=element_text(size=axis.title.size + 2),
+        plot.title = element_text(size=axis.title.size),
+        axis.line.x = element_line(size=0.05),
+        axis.line.y = element_line(size=0.05),
+        axis.ticks.x = element_line(size=0.05),
+        axis.ticks.y = element_line(size=0.05),
+        axis.ticks.length=unit(.1, "cm"),
+        legend.text = element_text(size = axis.text.size),
+        legend.title = element_text(size = axis.text.size),
+        legend.key.width = unit(0.01, "line"),
+        legend.margin=margin(c(-0.4, 0, 0, 0), unit = "lines"),
+        legend.justification = "left", 
+        legend.spacing.y = unit(0.1, "cm"),
+        legend.box = "vertical") +
+    ylab("Difference when using driver \n  instead of suitability") + 
+    guides(fill = guide_legend(override.aes = list(size = 2))) +
+    labs(fill = "Niche breadth", size="Niche optimum") +
+  coord_flip()
+
+ggsave("Figure_8.pdf", width=figure.width, height=figure.width + 1)
 
 #removing objects not needed any longer
 rm(list= ls()[!(ls() %in% to.preserve)])
 ```
 
-\newpage
 
-##Figure 9##
+## Figure 9
 
-```{r, echo=FALSE, fig.height=7.25, message=FALSE, warning=FALSE, error=FALSE, fig.width=3.625, cache=TRUE, fig.cap="Ecological memory features for combinations of niche optimum and niche breadth (left panel) and life-span and fecundity (right panel). Each point represents a virtual taxa. Horizontal jitter was applied to overlapping points."}
+```{r, echo=FALSE, fig.height=2.25, message=FALSE, warning=FALSE, error=FALSE, fig.width=2.75, cache=FALSE, fig.cap="Relationship between life traits, niche features, and ecological memory components, when using environmental suitability as exogenous component. Colors represent niche breadth, size represents niche optimum, and shape represents life-span. Numbers within figures represent fecundity. X and Y axes are computed as the average of the length, dominance, and strength of the endogenous and exogenous components of ecological memory. Contour lines represent the relative strength of the concurrent effect (synchronous influence of the driver over the suitability response)."}
 
-E1.driver.1cm <- E1.driver.df[E1.driver.df$sampling=="1cm", ]
+#getting Annual dataset
+E1.driver.1cm <- E1.suitability.df[E1.suitability.df$sampling=="Annual", ]
 E1.driver.1cm$Variable <- as.character(E1.driver.1cm$Variable)
 E1.driver.1cm[E1.driver.1cm$Variable=="Response", "Variable"]="Endogenous"
-E1.driver.1cm[E1.driver.1cm$Variable=="Driver.A", "Variable"]="Exogenous"
+E1.driver.1cm[E1.driver.1cm$Variable=="Suitability", "Variable"]="Exogenous"
 
-mem.features <- extractMemoryFeatures(analysis.output=E1.driver.1cm, exogenous.component="Exogenous", endogenous.component="Endogenous", sampling.subset="1cm")
+#extracting memory features
+mem.features <- extractMemoryFeatures(memory.pattern=E1.driver.1cm, 
+                                      exogenous.component="Exogenous", 
+                                      endogenous.component="Endogenous", 
+                                      sampling.subset="Annual", 
+                                      scale.strength = TRUE)
+mem.features$sampling <- NULL
 
+#mean of endogenous and exogenous components
+mem.features$endogenous.memory <- rowMeans(mem.features[, c("strength.endogenous", "length.endogenous", "dominance.endogenous")])
+mem.features$exogenous.memory <- rowMeans(mem.features[, c("strength.exogenous", "length.exogenous", "dominance.exogenous")])
 
-#to long format
-mem.features$label=NULL
-mem.features$sampling=NULL
-mem.features.long <- gather(mem.features, feature, value, 1:7)
-mem.features.long$maximum.age <- as.factor(mem.features.long$maximum.age)
-mem.features.long$fecundity <- as.factor(mem.features.long$fecundity)
-mem.features.long$niche.mean <- as.factor(mem.features.long$niche.mean)
-mem.features.long$niche.sd <- as.factor(mem.features.long$niche.sd)
-
-mem.features.long$feature<-as.character(mem.features.long$feature)
-mem.features.long[mem.features.long$feature=="dominance.endogenous", "feature"]<-"Dominance - endogen."
-mem.features.long[mem.features.long$feature=="dominance.exogenous", "feature"]<-"Dominance - exogen."
-mem.features.long[mem.features.long$feature=="length.endogenous", "feature"]<-"Length - endogen."
-mem.features.long[mem.features.long$feature=="length.exogenous", "feature"]<-"Length - exogen."
-mem.features.long[mem.features.long$feature=="strength.concurrent", "feature"]<-"Strength - concurr."
-mem.features.long[mem.features.long$feature=="strength.endogenous", "feature"]<-"Strength - endogen."
-mem.features.long[mem.features.long$feature=="strength.exogenous", "feature"]<-"Strength - exogen."
-
-#PLOTTING
-niche.plot <- ggplot(mem.features.long, aes(x=niche.mean, y =value, fill=niche.sd)) + 
-  geom_dotplot(binaxis="y", stackdir="center", dotsize=5.5, stackratio=1, alpha=0.5) + 
-  facet_wrap(facets = "feature", scales="free_y", ncol=1) +
-  scale_fill_manual(values=c(col.green, "#FEEE62")) +
-  theme(legend.position = "bottom") +
-  ylab("") +
-  xlab("Niche optimum") +
-  ggtitle("Niche traits") +
-  labs(fill="Niche breadth") +
-  guides(fill = guide_legend(override.aes = list(size = 5))) + 
-  theme(legend.position="bottom",
-        axis.text.x=element_text(size=axis.text.size/1.5),
-        axis.text.y=element_text(size=axis.text.size/2),
-        axis.title.x=element_text(size=axis.title.size/1.5),
-        axis.title.y=element_text(size=axis.title.size/1.5),
-        plot.margin = unit(c(1,0,0,0), "cm"),
-        legend.text=element_text(size=legend.text.size/2),
-        legend.title=element_text(size=legend.title.size/2),
-        strip.text.x = element_text(size = legend.title.size/2),legend.spacing.x = unit(0, 'cm'))
-
-life.plot <- ggplot(mem.features.long, aes(x=maximum.age, y =value, fill=fecundity)) + 
-  geom_dotplot(binaxis="y", stackdir="center", dotsize=5.5, stackratio=1, alpha=0.5) + 
-  facet_wrap(facets = "feature", scales="free_y", ncol=1) +
-  scale_fill_manual(values=c(col.green, "#FEEE62")) +
-  theme(legend.position = "bottom") +
-  ylab("") +
-  xlab("Life-span") + 
-  ggtitle("Life traits")+
-  labs(fill="Fecundity") +
-  guides(fill = guide_legend(override.aes = list(size = 5))) + 
-  theme(legend.position="bottom",
-        axis.text.x=element_text(size=axis.text.size/1.5),
-        axis.text.y=element_blank(),
-        axis.title.x=element_text(size=axis.title.size/1.5),
-        axis.title.y=element_text(size=axis.title.size/1.5),
-        plot.margin = unit(c(1,0.5,0,0), "cm"),
-        legend.text=element_text(size=legend.text.size/2),
-        legend.title=element_text(size=legend.title.size/2),
-        strip.text.x = element_text(size = legend.title.size/2),legend.spacing.x = unit(0, 'cm'))
+mem.features$difference <- mem.features$endogenous.memory / mem.features$exogenous.memory
 
 
-plot_grid(niche.plot, life.plot, ncol=2, rel_widths = c(1.1,1)) + theme(plot.margin = unit(c(0,0.1,0,0), "cm"))
-ggsave("Figure_9.pdf", width=figure.width/2, height=figure.width)
+#traits to factor
+mem.features$maximum.age <- as.factor(mem.features$maximum.age)
+mem.features$fecundity <- as.factor(mem.features$fecundity)
+mem.features$niche.mean <- as.factor(mem.features$niche.mean)
+mem.features$niche.sd <- as.factor(mem.features$niche.sd)
+
+#interpolating concurrent.effect to be plotted as contour
+glm.model <- glm(strength.concurrent ~ poly(endogenous.memory, 2, raw=TRUE) + poly(exogenous.memory, 3, raw=TRUE), data = mem.features)
+
+#pseudo R-squared
+# cor(predict(glm.model), mem.features$strength.concurrent)
+# summary(glm.model)
+# cor(mem.features[,c("endogenous.memory", "exogenous.memory")])
+
+#generating grid of data to predict the interpolation
+xgrid <-  seq(min(mem.features$endogenous.memory), max(mem.features$endogenous.memory), 0.01)
+ygrid <-  seq(min(mem.features$exogenous.memory), max(mem.features$exogenous.memory), 0.01)
+grid <-  expand.grid(endogenous.memory = xgrid, exogenous.memory = ygrid)
+prediction <- predict(glm.model, newdata = grid)
+prediction.df <- data.frame(endogenous.memory=grid$endogenous.memory, exogenous.memory=grid$exogenous.memory, concurrent.effect=prediction)
+
+#limiting extrapolation
+prediction.df <- prediction.df[prediction.df$concurrent.effect >= 0.45, ]
+
+#scatterplot
+ggplot(data=mem.features, aes(x=endogenous.memory, y=exogenous.memory)) + 
+  geom_contour(data=prediction.df, aes(z=concurrent.effect, alpha = stat(level), label = stat(level)), color="gray20", size=0.3, breaks=c(0.6, 0.7, 0.8, 0.9, 1, 1.2)) +
+  scale_alpha(range=c(0.2, 1), breaks=c(0.6, 0.8, 1)) +
+  scale_size_discrete(range = c(3, 4.5)) +
+  scale_shape_manual(values=c(21,24)) +
+  geom_point(aes(size=niche.mean, shape=maximum.age, fill=niche.sd), stroke=0.1, alpha=0.7) +
+  geom_text(aes(label=fecundity), hjust=0.5, vjust=0.5, size=1.3, color="black") +
+  scale_fill_manual(values=c(col.green, col.blue)) +
+  scale_color_manual(values=c(col.green, col.blue)) +
+  guides(text=FALSE, 
+         alpha=guide_legend(order = 1),
+         fill=guide_legend(order = 3, override.aes=list(shape=22, stroke=0)),
+         size=guide_legend(order = 2, override.aes=list(shape=22)),
+         color=FALSE
+         ) +
+  xlab("Endogenous memory") +
+  ylab("Exogenous memory") +
+  theme(plot.margin = unit(c(0.6, 0.2, 0, 0), "cm"),
+        legend.position="right",
+        axis.text.x=element_text(size=axis.text.size),
+        axis.text.y=element_text(size=axis.text.size),
+        axis.title.x=element_text(size=axis.title.size + 1),
+        axis.title.y=element_text(size=axis.title.size + 1),
+        plot.title = element_text(size=axis.title.size),
+        axis.line.x = element_line(size=0.05),
+        axis.line.y = element_line(size=0.05),
+        axis.ticks.x = element_line(size=0.05),
+        axis.ticks.y = element_line(size=0.05),
+        axis.ticks.length=unit(.1, "cm"),
+        legend.text = element_text(size = axis.text.size),
+        legend.title = element_text(size = axis.text.size),
+        legend.key.height = unit(0.01, "line"),
+        legend.margin=margin(c(-0.8, 0, 0, -0.5), unit = "lines"),
+        legend.justification = "left") +
+  labs(alpha="Concurrent effect", fill = "Niche breadth", size="Niche optimum", shape="Life-span") +
+  scale_x_continuous(breaks=seq(0, 1, by=0.1), limits=c(0.39,0.8)) +
+  scale_y_continuous(breaks=seq(0, 1, by=0.1), limits = c(0.399, 1))
+    
+    ggsave("Figure_9.pdf", width=figure.width, height=figure.width - 0.5)
+
 
 #removing objects not needed any longer
 rm(list= ls()[!(ls() %in% to.preserve)])
+```
+
+
+```{r, echo=FALSE}
+
 ```
 
