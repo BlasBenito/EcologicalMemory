@@ -503,7 +503,7 @@ rm(list= ls()[!(ls() %in% to.preserve)])
 ```
 
 
-## Figure 2
+## Figure (removed from paper)
 
 This figure was generated with the package *yEd* (URL: www.yworks.com/products/yed).
 
@@ -511,7 +511,7 @@ This figure was generated with the package *yEd* (URL: www.yworks.com/products/y
 knitr::include_graphics("Figure_2.pdf")
 ```
 
-## Figure 3
+## Figure (removed from paper)
 
 ```{r, echo=FALSE, fig.height=3.75, fig.width=2.75, cache=FALSE, fig.cap="Panel a represents the different ecological niches used in the simulations. Light green colour represents the driver and marine blue represents the niche of the virtual taxa. Numbers in grey strips represent the mean (m) and standard deviation (sd) of the Gaussian functions used to define the niche. Panel b shows the dynamics of the driver  during 2000 years, and the suitability values returned by the different niche functions in panel a. Panel c shows the two combinations of life-span used in the simulations, with their respective growth rates, and sexual maturity indicated by a blue vertical line."}
 
@@ -669,7 +669,7 @@ rm(list= ls()[!(ls() %in% to.preserve)])
 
 \newpage
 
-## Figure 4
+## Figure 2
 
 ```{r, echo=FALSE, fig.height=1.75, fig.width=2.75, cache=FALSE, fig.cap="Example of ecological memory pattern showing the relative importance of each component at each time lag as computed by Random Forest. The ecological memory features measured are: a) strength of the concurrent effect (highlighted by a gray box); b) strength of the exogenous memory; c) strength of the endogenous component; d) length of the exogenous component; e) length of the endogenous component; f) dominance of the endogenous component; g) dominance of the exogenous component. Note that only data above the median of the Random variable (yellow line) are considered for the computations."}
 
@@ -777,7 +777,7 @@ rm(list= ls()[!(ls() %in% to.preserve)])
 ```
 
 
-## Figure 5
+## Figure (removed from paper)
 
 ```{r, echo=FALSE, fig.height=2.75, fig.width=5.5, cache=FALSE, fig.cap="Driver (light green) and a subset of simulations (marine-blue) derived from the original Annual resolution (left panel), and resampled at 2 and 10cm (centre and right panels)."}
 #needs to reload data produced by Appendix I
@@ -962,7 +962,7 @@ rm(list= ls()[!(ls() %in% to.preserve)])
 
 \newpage
 
-## Table 1
+## Table 1 (removed from paper)
 
 ```{r, echo=FALSE, cache=FALSE}
 #preparing correlation matrix
@@ -1022,12 +1022,12 @@ kable(correlation.matrix, row.names=NA, col.names = c("Life-span", "Fecundity", 
 
 
 #removing objects not needed any longer
-rm(list= ls()[!(ls() %in% to.preserve)])
+# rm(list= ls()[!(ls() %in% to.preserve)])
 ```
 
 \newpage
 
-## Figure 6
+## Figure 3
 
 ```{r, echo=FALSE, fig.height=2.75, fig.width=2.75, cache=FALSE, fig.cap="Effect of variable sediment accumulation rate on ecological memory features. Dots represent virtual taxa. Values of the x axis show the difference in ecological memory features when substracting those of the 1cm dataset (variable accumulation rate) to those of the Annual dataset (constant accumulation rate). Violin-plots, in blue, show the underlying distribution of the data. Vertical blue lines represent the median."}
 
@@ -1116,7 +1116,7 @@ rm(list= ls()[!(ls() %in% to.preserve)])
 
 \newpage
 
-## Figure 7
+## Figure 4
 
 ```{r, echo=FALSE, fig.height=4.75, message=FALSE, warning=FALSE, error=FALSE, fig.width=2.75, cache=FALSE, fig.cap="Ecological memory features across decreasing sampling densities. Dots represent virtual taxa (horizontal jitter was applied to the points for ease of examination)."}
 
@@ -1221,7 +1221,7 @@ rm(list= ls()[!(ls() %in% to.preserve)])
 
 \newpage
 
-## Figure 8
+## Figure 5
 
 ```{r, echo=FALSE, fig.height=3.5, message=FALSE, warning=FALSE, error=FALSE, fig.width=3.625, cache=FALSE, fig.cap="Change in values of the different ecological memory features when using driver as exogenous memory component instead of suitability. Colors represent niche breadth (higher if blue), and size represent niche position (larger for a marginal niche position)."}
 
@@ -1328,7 +1328,7 @@ rm(list= ls()[!(ls() %in% to.preserve)])
 ```
 
 
-## Figure 9
+## Figure 6
 
 ```{r, echo=FALSE, fig.height=2.25, message=FALSE, warning=FALSE, error=FALSE, fig.width=2.75, cache=FALSE, fig.cap="Relationship between life traits, niche features, and ecological memory components, when using environmental suitability as exogenous component. Colors represent niche breadth, size represents niche optimum, and shape represents life-span. Numbers within figures represent fecundity. X and Y axes are computed as the average of the length, dominance, and strength of the endogenous and exogenous components of ecological memory. Contour lines represent the relative strength of the concurrent effect (synchronous influence of the driver over the suitability response)."}
 
